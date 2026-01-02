@@ -53,19 +53,91 @@ public:
     }
 
     void recommend_friends(int u) {
-        bool visited[MAX] = {false};
-        int mutual[MAX] = {0};
-        for (Node* temp = adj[u]; temp != NULL; temp = temp->next)
-            visited[temp->data] = true;
+        if (u < 0 || u >= userCount) {
+            cout << "User not found.\n";
+            return;
+        }
 
-        for (Node* temp = adj[u]; temp != NULL; temp = temp->next) {
-            for (Node* t2 = adj[temp->data]; t2 != NULL; t2 = t2->next) {
-                if (!visited[t2->data] && t2->data != u)
-                    mutual[t2->data]++;
+        int score[MAX] = {0};
+        int distance[MAX];
+        for(int i=0; i<MAX; i++) distance[i] = -1; // -1 means unvisited
+
+        queue<int> q;
+
+        // 1. Initialize BFS
+        q.push(u);
+        distance[u] = 0;
+
+        // 2. Start BFS Discovery
+        while (!q.empty()) {
+            int curr = q.front();
+            q.pop();
+
+            // We only look up to 3 handshakes away (Distance 3)
+            if (distance[curr] >= 3) continue; 
+
+            Node* temp = adj[curr];
+            while (temp != NULL) {
+                int neighbor = temp->data;
+
+                if (distance[neighbor] == -1) { // New person found
+                    distance[neighbor] = distance[curr] + 1;
+                    q.push(neighbor);
+
+                    // --- SCORING LOGIC ---
+                    
+                    // If they are a friend of a friend (Distance 2)
+                    if (distance[neighbor] == 2) {
+                        score[neighbor] += 10; // High priority
+                    }
+                    // If they are a friend of a friend of a friend (Distance 3)
+                    else if (distance[neighbor] == 3) {
+                        score[neighbor] += 3; // Lower priority
+                    }
+                } 
+                else if (distance[neighbor] > 1 && neighbor != u) {
+                    // If we find them again via a different path, 
+                    // it means they have ANOTHER mutual friend.
+                    score[neighbor] += 5; 
+                }
+                temp = temp->next;
             }
         }
-        for (int i = 0; i < userCount; i++)
-            if (mutual[i] > 0) cout << users[i].name << " (" << mutual[i] << " mutual)\n";
+
+        // 3. APPLY OTHER FACTORS (City Matching)
+        // We check every user in the system, even if BFS didn't reach them
+        for (int i = 0; i < userCount; i++) {
+            if (i == u || distance[i] == 1) continue; // Skip self and direct friends
+
+            // Factor: Same City Bonus
+            if (users[i].city == users[u].city) {
+                score[i] += 7; 
+            }
+        }
+
+        // 4. DISPLAY RESULTS
+        cout << "\n--- Sophisticated Recommendations for " << users[u].name << " ---\n";
+        bool found = false;
+        for (int i = 0; i < userCount; i++) {
+            if (score[i] > 0) {
+                found = true;
+                cout << ">> " << users[i].name 
+                     << " | Strength: " << score[i] 
+                     << " | Connection: ";
+                
+                if (distance[i] == 2) cout << "Friend of a friend";
+                else if (distance[i] == 3) cout << "In your extended network";
+                else if (distance[i] == -1) cout << "Lives in your city";
+                else cout << "Suggested contact";
+                
+                if (users[i].city == users[u].city && distance[i] != -1) 
+                    cout << " (Also in " << users[i].city << ")";
+                
+                cout << endl;
+            }
+        }
+
+        if (!found) cout << "No recommendations found yet. Expand your network!\n";
     }
 
     void display_network() {
