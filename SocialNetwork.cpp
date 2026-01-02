@@ -1,5 +1,5 @@
 #include <queue>
-#include "Structures.cpp" // Importing classes without a .h file
+#include "Structures.cpp" 
 
 #define MAX 100
 

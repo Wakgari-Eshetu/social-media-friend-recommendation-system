@@ -1,5 +1,5 @@
 #include <iostream>
-#include "SocialNetwork.cpp" // Importing the logic
+#include "SocialNetwork.cpp"
 
 using namespace std;
 
